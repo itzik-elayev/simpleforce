@@ -1,4 +1,4 @@
-module github.com/simpleforce/simpleforce
+module github.com/itzik-elayev/simpleforce
 
 go 1.17
 

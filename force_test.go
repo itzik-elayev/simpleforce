@@ -1,6 +1,7 @@
 package simpleforce
 
 import (
+	"context"
 	"log"
 	"os"
 	"strings"
@@ -36,7 +37,7 @@ func requireClient(t *testing.T, skippable bool) *Client {
 	if client == nil {
 		t.Fail()
 	}
-	err := client.LoginPassword(sfUser, sfPass, sfToken)
+	err := client.LoginPassword(context.Background(), sfUser, sfPass, sfToken)
 	if err != nil {
 		t.Fatal()
 	}
@@ -52,14 +53,14 @@ func TestClient_LoginPassword(t *testing.T) {
 	}
 
 	// Use token
-	err := client.LoginPassword(sfUser, sfPass, sfToken)
+	err := client.LoginPassword(context.Background(), sfUser, sfPass, sfToken)
 	if err != nil {
 		t.Fail()
 	} else {
 		log.Println(logPrefix, "sessionID:", client.sessionID)
 	}
 
-	err = client.LoginPassword("__INVALID_USER__", "__INVALID_PASS__", "__INVALID_TOKEN__")
+	err = client.LoginPassword(context.Background(), "__INVALID_USER__", "__INVALID_PASS__", "__INVALID_TOKEN__")
 	if err == nil {
 		t.Fail()
 	}
@@ -74,7 +75,7 @@ func TestClient_LoginPasswordNoToken(t *testing.T) {
 	}
 
 	// Trusted IP must be configured AND the request must be initiated from the trusted IP range.
-	err := client.LoginPassword(sfUser, sfPass, "")
+	err := client.LoginPassword(context.Background(), sfUser, sfPass, "")
 	if err != nil {
 		t.FailNow()
 	} else {
@@ -90,7 +91,7 @@ func TestClient_Query(t *testing.T) {
 	client := requireClient(t, true)
 
 	q := "SELECT Id,LastModifiedById,LastModifiedDate,ParentId,CommentBody FROM CaseComment"
-	result, err := client.Query(q)
+	result, err := client.Query(context.Background(), q)
 	if err != nil {
 		log.Println(logPrefix, "query failed,", err)
 		t.FailNow()
@@ -112,13 +113,13 @@ func TestClient_Query2(t *testing.T) {
 	client := requireClient(t, true)
 
 	q := "Select+id,createdbyid,parentid,parent.casenumber,parent.subject,createdby.name,createdby.alias+from+casecomment"
-	result, err := client.Query(q)
+	result, err := client.Query(context.Background(), q)
 	if err != nil {
 		t.FailNow()
 	}
 	if len(result.Records) > 0 {
 		comment1 := &result.Records[0]
-		case1 := comment1.SObjectField("Case", "Parent").Get()
+		case1 := comment1.SObjectField("Case", "Parent").Get(context.Background())
 		if comment1.StringField("ParentId") != case1.ID() {
 			t.Fail()
 		}
@@ -129,7 +130,7 @@ func TestClient_ApexREST(t *testing.T) {
 	client := requireClient(t, true)
 
 	endpoint := "services/apexrest/my-custom-endpoint"
-	result, err := client.ApexREST(endpoint, "POST", strings.NewReader(`{"my-property": "my-value"}`))
+	result, err := client.ApexREST(context.Background(), endpoint, "POST", strings.NewReader(`{"my-property": "my-value"}`))
 	if err != nil {
 		log.Println(logPrefix, "request failed,", err)
 		t.FailNow()
@@ -142,7 +143,7 @@ func TestClient_QueryLike(t *testing.T) {
 	client := requireClient(t, true)
 
 	q := "Select Id, createdby.name, subject from case where subject like '%simpleforce%'"
-	result, err := client.Query(q)
+	result, err := client.Query(context.Background(), q)
 	if err != nil {
 		t.FailNow()
 	}
